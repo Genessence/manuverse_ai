@@ -1,0 +1,49 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Install Dependencies",
+			"type": "shell",
+			"command": "pip",
+			"args": ["install", "-r", "requirements.txt"],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Run Multi-Agent Data Analysis App",
+			"type": "shell",
+			"command": "streamlit",
+			"args": [
+				"run",
+				"multi_agent_data_analysis.py"
+			],
+			"group": "build",
+			"isBackground": true,
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Setup and Run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"Install Dependencies",
+				"Run Multi-Agent Data Analysis App"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+	]
+}
