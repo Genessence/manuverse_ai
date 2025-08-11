@@ -666,6 +666,37 @@ class ResponseGenerationAgent:
             response_text += f"\n⚠️ Chart generation error: {str(e)}\n"
         
         return response_text, chart_fig
+    
+    @staticmethod
+    def generate_text_only_response(query: str, analysis_result: Any, description: str) -> str:
+        """
+        Generate a text-only response without visualization
+        """
+        
+        # Create text response
+        response_text = f"""
+## Analysis Results
+
+**Your Query:** {query}
+
+**Finding:** {description}
+
+**Details:**
+"""
+        
+        # Add specific details based on result type
+        if isinstance(analysis_result, (int, float)):
+            response_text += f"- Calculated value: {analysis_result:,.2f}\n"
+        elif hasattr(analysis_result, 'to_string'):
+            response_text += f"```\n{analysis_result.to_string()}\n```\n"
+        elif hasattr(analysis_result, 'head'):  # DataFrame-like object
+            response_text += f"```\n{str(analysis_result)}\n```\n"
+        else:
+            response_text += f"- Result: {str(analysis_result)}\n"
+        
+        response_text += "\n💡 **Tip:** Enable visualizations in the sidebar to see charts for your data!"
+        
+        return response_text
 
 def main():
     """Main Streamlit application"""
@@ -684,6 +715,8 @@ def main():
         st.session_state.using_default_data = False
     if 'default_data_loaded' not in st.session_state:
         st.session_state.default_data_loaded = False
+    if 'enable_visualization' not in st.session_state:
+        st.session_state.enable_visualization = True  # Default to enabled
     
     # Function to load default mining database
     def load_default_mining_data():
@@ -724,6 +757,19 @@ def main():
         type=['csv', 'xlsx', 'xls', 'txt', 'doc'],
         help="Upload CSV, Excel, or text files for analysis. This will replace the default dataset."
     )
+    
+    # Visualization toggle
+    st.sidebar.header("🎨 Visualization Settings")
+    st.session_state.enable_visualization = st.sidebar.toggle(
+        "Enable Visualizations", 
+        value=st.session_state.enable_visualization,
+        help="Turn on/off chart generation for query results"
+    )
+    
+    if st.session_state.enable_visualization:
+        st.sidebar.success("📊 Charts enabled")
+    else:
+        st.sidebar.info("📈 Charts disabled - text results only")
     
     # File ingestion
     if uploaded_file is not None:
@@ -917,34 +963,45 @@ def main():
                         )
                         
                         if analysis_result is not None:
-                            # Agent 3: Visualization
-                            st.write("🎨 **Visualization Agent** generating chart...")
-                            chart_code = VisualizationAgent.generate_chart_code(
-                                query, analysis_result, 
-                                plan.get('visualization_type', 'bar_chart'),
-                                description
-                            )
-                            
-                            # Agent 4: Response Generation
-                            st.write("📝 **Response Generation Agent** formatting results...")
-                            response_text, chart_fig = ResponseGenerationAgent.generate_response(
-                                query, analysis_result, description, chart_code
-                            )
+                            # Agent 3: Visualization (conditional)
+                            chart_fig = None
+                            if st.session_state.enable_visualization:
+                                st.write("🎨 **Visualization Agent** generating chart...")
+                                chart_code = VisualizationAgent.generate_chart_code(
+                                    query, analysis_result, 
+                                    plan.get('visualization_type', 'bar_chart'),
+                                    description
+                                )
+                                
+                                # Agent 4: Response Generation (with chart)
+                                st.write("📝 **Response Generation Agent** formatting results...")
+                                response_text, chart_fig = ResponseGenerationAgent.generate_response(
+                                    query, analysis_result, description, chart_code
+                                )
+                            else:
+                                # Agent 4: Response Generation (text only)
+                                st.write("📝 **Response Generation Agent** formatting results...")
+                                response_text = ResponseGenerationAgent.generate_text_only_response(
+                                    query, analysis_result, description
+                                )
                             
                             # Display results
                             st.markdown("---")
                             st.markdown(response_text)
                             
-                            if chart_fig:
+                            if chart_fig and st.session_state.enable_visualization:
                                 st.pyplot(chart_fig)
                                 plt.close(chart_fig)  # Clean up
+                            elif not st.session_state.enable_visualization:
+                                st.info("📈 **Visualization disabled** - Enable it in the sidebar to see charts")
                             
                             # Save to history
                             st.session_state.analysis_history.append({
                                 'query': query,
                                 'plan': plan,
                                 'result': description,
-                                'timestamp': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
+                                'timestamp': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                'had_visualization': st.session_state.enable_visualization
                             })
                         
                         else:
