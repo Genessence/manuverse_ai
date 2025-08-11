@@ -182,6 +182,7 @@ cython_debug/
 *.gif
 *.svg
 !sample_data.csv
+MiningProcess_Flotation_Plant_Database.csv
 
 # Temporary files
 *.tmp
