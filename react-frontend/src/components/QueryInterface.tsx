@@ -22,23 +22,24 @@ const QueryInterface: React.FC<QueryInterfaceProps> = ({
   };
 
   const sampleQueries = [
-    "What are the top 5 values in the dataset?",
-    "Show me the distribution of values",
-    "Calculate the average of all numeric columns",
-    "Find outliers in the data",
-    "Show correlations between columns",
-    "What is the data summary?",
-    "Create a visualization of the main trends",
+    "Show me a summary of this data",
+    "What are the main patterns in the data?",
+    "Tell me about the highest values",
+    "Calculate the average of numeric columns",
+    "Are there any interesting trends?",
+    "What insights can you find?",
+    "Show me a visualization of key metrics",
+    "Help me understand this dataset better",
   ];
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">🤖 Ask Your Question</h2>
+      <h2 className="text-xl font-semibold text-gray-900 mb-4">💬 What would you like to know?</h2>
       
       {fileMetadata && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-sm text-green-800">
-            ✅ Data loaded: <strong>{fileMetadata.filename}</strong>
+            ✅ Ready to analyze: <strong>{fileMetadata.filename}</strong>
           </p>
         </div>
       )}
@@ -46,7 +47,7 @@ const QueryInterface: React.FC<QueryInterfaceProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="query" className="block text-sm font-medium text-gray-700 mb-2">
-            What would you like to know about your data?
+            Ask me anything about your data - I'll analyze it step by step!
           </label>
           <textarea
             id="query"

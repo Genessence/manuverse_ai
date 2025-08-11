@@ -91,6 +91,10 @@ function App() {
       setError(null);
       setCurrentStep('analysis');
       
+      // Clear previous results for conversational flow
+      setCurrentResult(null);
+      setAgentSteps([]);
+      
       // Start analysis
       const response = await axios.post(`${API_BASE_URL}/analyze`, {
         query,
@@ -120,10 +124,24 @@ function App() {
             setCurrentStep('results');
             setLoading(false);
             await loadAnalysisHistory();
+            
+            // Auto return to query step after 3 seconds for conversational flow
+            setTimeout(() => {
+              setCurrentStep('query');
+              setCurrentResult(null);
+              setAgentSteps([]);
+            }, 5000);
+            
           } else if (sessionData.status === 'error') {
             clearInterval(pollInterval);
             setError(sessionData.error || 'Analysis failed');
             setLoading(false);
+            
+            // Return to query step after error
+            setTimeout(() => {
+              setCurrentStep('query');
+              setError(null);
+            }, 3000);
           }
         } catch (err) {
           console.error('Failed to fetch status:', err);
@@ -136,14 +154,32 @@ function App() {
         if (loading) {
           setError('Analysis timeout - please try again');
           setLoading(false);
+          // Return to query step after timeout
+          setTimeout(() => {
+            setCurrentStep('query');
+            setError(null);
+          }, 3000);
         }
       }, 60000);
       
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to start analysis');
       setLoading(false);
+      
+      // Return to query step after error
+      setTimeout(() => {
+        setCurrentStep('query');
+        setError(null);
+      }, 3000);
     }
   }, [enableVisualization, loading]);
+
+  const handleAskAnotherQuestion = useCallback(() => {
+    setCurrentStep('query');
+    setCurrentResult(null);
+    setAgentSteps([]);
+    setError(null);
+  }, []);
 
   const handleRerunAnalysis = useCallback((query: string) => {
     handleQuerySubmit(query);
@@ -247,10 +283,30 @@ function App() {
             )}
             
             {currentStep === 'results' && currentResult && (
-              <AnalysisResults 
-                result={currentResult}
-                enableVisualization={enableVisualization}
-              />
+              <div className="space-y-4">
+                <AnalysisResults 
+                  result={currentResult}
+                  enableVisualization={enableVisualization}
+                />
+                
+                {/* Conversational flow - Ask Another Question */}
+                <div className="bg-white p-6 rounded-lg shadow-sm border">
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      💬 Ready for another question?
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Ask me anything else about your data!
+                    </p>
+                    <button
+                      onClick={handleAskAnotherQuestion}
+                      className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
+                    >
+                      Ask Another Question
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 
