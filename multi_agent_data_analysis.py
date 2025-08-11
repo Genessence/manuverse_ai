@@ -680,40 +680,100 @@ def main():
         st.session_state.column_metadata = {}
     if 'analysis_history' not in st.session_state:
         st.session_state.analysis_history = []
+    if 'using_default_data' not in st.session_state:
+        st.session_state.using_default_data = False
+    if 'default_data_loaded' not in st.session_state:
+        st.session_state.default_data_loaded = False
+    
+    # Function to load default mining database
+    def load_default_mining_data():
+        """Load the default mining process database"""
+        try:
+            if os.path.exists("MiningProcess_Flotation_Plant_Database.csv"):
+                df = pd.read_csv("MiningProcess_Flotation_Plant_Database.csv")
+                return df
+            else:
+                st.warning("⚠️ Default mining database not found. Generating sample data instead.")
+                return None
+        except Exception as e:
+            st.error(f"Error loading default mining database: {str(e)}")
+            return None
+    
+    # Load default data if no data is present and not already loaded
+    if (st.session_state.data is None and 
+        not st.session_state.default_data_loaded and 
+        not st.session_state.get('user_uploaded_file', False)):
+        
+        with st.spinner("🔍 Loading default mining process database..."):
+            default_df = load_default_mining_data()
+            if default_df is not None:
+                st.session_state.data = default_df
+                st.session_state.column_metadata = FileIngestionAgent.get_column_metadata(default_df)
+                st.session_state.using_default_data = True
+                st.session_state.default_data_loaded = True
+                st.session_state.current_file = "MiningProcess_Flotation_Plant_Database.csv (Default Dataset)"
+                
+                st.success("✅ Default mining process database loaded!")
+                st.info("📊 **Using Default Dataset**: Mining Process Flotation Plant Database\n\n"
+                       "This dataset contains mining process data. Upload your own file to analyze different data.")
     
     # Sidebar for file upload
     st.sidebar.header("📁 File Upload")
     uploaded_file = st.sidebar.file_uploader(
-        "Choose a file",
+        "Upload your own data file",
         type=['csv', 'xlsx', 'xls', 'txt', 'doc'],
-        help="Upload CSV, Excel, or text files for analysis"
+        help="Upload CSV, Excel, or text files for analysis. This will replace the default dataset."
     )
     
     # File ingestion
     if uploaded_file is not None:
-        # Reset session state when new file is uploaded
+        # Mark that user has uploaded a file
+        st.session_state.user_uploaded_file = True
+        
+        # Reset session state when new file is uploaded (including clearing default data)
         if st.session_state.get('current_file') != uploaded_file.name:
             st.session_state.data = None
             st.session_state.column_metadata = {}
             st.session_state.analysis_history = []
+            st.session_state.using_default_data = False
             st.session_state.current_file = uploaded_file.name
         
-        # Process file
-        if st.session_state.data is None:
-            with st.spinner("🔍 File Ingestion Agent processing..."):
+        # Process uploaded file
+        if st.session_state.data is None or st.session_state.using_default_data:
+            with st.spinner("🔍 File Ingestion Agent processing your uploaded file..."):
                 df = FileIngestionAgent.ingest_file(uploaded_file)
                 
                 if df is not None:
                     st.session_state.data = df
                     st.session_state.column_metadata = FileIngestionAgent.get_column_metadata(df)
+                    st.session_state.using_default_data = False
                     
-                    st.sidebar.success(f"✅ File loaded: {uploaded_file.name}")
+                    st.sidebar.success(f"✅ Your file loaded: {uploaded_file.name}")
                     st.sidebar.write(f"**Rows:** {len(df):,}")
                     st.sidebar.write(f"**Columns:** {len(df.columns)}")
+                    
+                    # Show that user data is now being used
+                    st.info("🎯 **Now analyzing your uploaded data**")
+    
+    elif not st.session_state.get('user_uploaded_file', False) and st.session_state.using_default_data:
+        # Show default data info in sidebar
+        st.sidebar.success("✅ Using default mining database")
+        if st.session_state.data is not None:
+            st.sidebar.write(f"**Rows:** {len(st.session_state.data):,}")
+            st.sidebar.write(f"**Columns:** {len(st.session_state.data.columns)}")
+        st.sidebar.info("💡 Upload your own file to analyze different data")
         
         # Display data preview
         if st.session_state.data is not None:
-            st.header("📊 Data Preview")
+            # Show dataset source information
+            if st.session_state.using_default_data:
+                st.header("📊 Data Preview - Default Mining Process Database")
+                st.info("🏭 **Dataset**: Mining Process Flotation Plant Database (Default)\n\n"
+                       "This dataset contains real mining process data for analysis demonstration. "
+                       "Upload your own file to analyze different data.")
+            else:
+                st.header("📊 Data Preview - Your Uploaded Data")
+                st.success(f"🎯 **Analyzing your file**: {st.session_state.current_file}")
             
             col1, col2 = st.columns([2, 1])
             
@@ -762,13 +822,22 @@ def main():
             st.subheader("Example Queries:")
             
             # Generate dynamic examples based on available columns
-            if st.session_state.column_metadata:
+            example_queries = []
+            
+            if st.session_state.using_default_data:
+                # Mining-specific examples for default dataset
+                example_queries = [
+                    "What is the total ore tonnage?",
+                    "Show me average flotation cell recovery",
+                    "Count mining operations by shift",
+                    "What's the maximum feed rate?",
+                    "Group recovery rates by ore grade"
+                ]
+            elif st.session_state.column_metadata:
                 numeric_cols = [col for col, dtype in st.session_state.column_metadata.items() 
                                if dtype in ['integer', 'float']]
                 categorical_cols = [col for col, dtype in st.session_state.column_metadata.items() 
                                    if dtype == 'categorical']
-                
-                example_queries = []
                 
                 # Add specific examples based on available columns
                 if numeric_cols:
@@ -796,7 +865,7 @@ def main():
                 
                 example_queries = example_queries[:5]  # Limit to 5
             else:
-                # Default examples when no data is loaded
+                # Default examples when no specific data is available
                 example_queries = [
                     "What is the total sales?",
                     "Show me the average revenue by region", 
@@ -897,40 +966,43 @@ def main():
                         st.json(item['plan'])
     
     else:
-        # Welcome screen
-        st.header("Welcome to the Multi-Agent Data Analysis System! 👋")
-        
-        st.markdown("""
-        This prototype demonstrates a multi-agent system for data analysis with the following components:
-        
-        ### 🤖 Agent Architecture
-        
-        1. **📁 File Ingestion Agent**
-           - Handles CSV, Excel, and text file uploads
-           - Automatically detects column types and metadata
-        
-        2. **🧠 Query Understanding Agent**
-           - Translates natural language queries into structured analysis plans
-           - Maps user intent to specific data operations
-        
-        3. **📈 Data Analysis Agent**
-           - Executes analysis plans using pandas operations
-           - Supports aggregations, grouping, and statistical analysis
-        
-        4. **🎨 Visualization Agent**
-           - Generates matplotlib chart code dynamically
-           - Creates appropriate visualizations based on data and query type
-        
-        5. **📝 Response Generation Agent**
-           - Formats comprehensive responses with text and charts
-           - Presents results in a user-friendly format
-        
-        ### 🚀 Getting Started
-        
-        1. **Upload a file** using the sidebar (CSV, Excel, or text files)
-        2. **Ask questions** about your data in natural language
-        3. **View results** including charts and detailed analysis
-        4. **Explore history** of your previous analyses
+        # Welcome screen - show only if no default data is loaded
+        if not st.session_state.using_default_data:
+            st.header("Welcome to the Multi-Agent Data Analysis System! 👋")
+            
+            st.markdown("""
+            This prototype demonstrates a multi-agent system for data analysis with the following components:
+            
+            ### 🤖 Agent Architecture
+            
+            1. **📁 File Ingestion Agent**
+               - Handles CSV, Excel, and text file uploads
+               - Automatically detects column types and metadata
+               - **Pre-loaded with mining process database for immediate testing**
+            
+            2. **🧠 Query Understanding Agent**
+               - Translates natural language queries into structured analysis plans
+               - Maps user intent to specific data operations
+            
+            3. **📈 Data Analysis Agent**
+               - Executes analysis plans using pandas operations
+               - Supports aggregations, grouping, and statistical analysis
+            
+            4. **🎨 Visualization Agent**
+               - Generates matplotlib chart code dynamically
+               - Creates appropriate visualizations based on data and query type
+            
+            5. **📝 Response Generation Agent**
+               - Formats comprehensive responses with text and charts
+               - Presents results in a user-friendly format
+            
+            ### 🚀 Getting Started
+            
+            1. **Start immediately** with the pre-loaded mining process database
+            2. **Or upload your own file** using the sidebar (CSV, Excel, or text files)
+            3. **Ask questions** about your data in natural language
+            4. **View results** including charts and detailed analysis
+            5. **Explore history** of your previous analyses
         
         ### 💡 Example Queries
         
@@ -951,27 +1023,49 @@ def main():
         **Ready to begin?** Upload a file to start your analysis! 📊
         """)
         
-        # Sample data generation for demo
-        st.markdown("---")
-        st.subheader("🎲 Want to try with sample data?")
+            # Sample data generation for demo
+            st.markdown("---")
+            st.subheader("🎲 Want to try with different sample data?")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if st.button("🏭 Load Default Mining Database", disabled=st.session_state.using_default_data):
+                    # Load the default mining database
+                    default_df = load_default_mining_data()
+                    if default_df is not None:
+                        st.session_state.data = default_df
+                        st.session_state.column_metadata = FileIngestionAgent.get_column_metadata(default_df)
+                        st.session_state.using_default_data = True
+                        st.session_state.user_uploaded_file = False
+                        st.session_state.current_file = "MiningProcess_Flotation_Plant_Database.csv (Default Dataset)"
+                        st.success("✅ Default mining database loaded!")
+                        st.rerun()
+            
+            with col2:
+                if st.button("📊 Generate Sample Sales Data"):
+                    # Create sample data
+                    np.random.seed(42)
+                    sample_data = pd.DataFrame({
+                        'Region': np.random.choice(['North', 'South', 'East', 'West'], 100),
+                        'Product': np.random.choice(['A', 'B', 'C', 'D'], 100),
+                        'Sales': np.random.randint(100, 1000, 100),
+                        'Quantity': np.random.randint(1, 50, 100),
+                        'Date': pd.date_range('2024-01-01', periods=100, freq='D')
+                    })
+                    
+                    st.session_state.data = sample_data
+                    st.session_state.column_metadata = FileIngestionAgent.get_column_metadata(sample_data)
+                    st.session_state.using_default_data = False
+                    st.session_state.user_uploaded_file = False
+                    st.session_state.current_file = "sample_sales_data.csv (Generated)"
+                    
+                    st.success("✅ Sample sales data generated!")
+                    st.rerun()
         
-        if st.button("Generate Sample Sales Data"):
-            # Create sample data
-            np.random.seed(42)
-            sample_data = pd.DataFrame({
-                'Region': np.random.choice(['North', 'South', 'East', 'West'], 100),
-                'Product': np.random.choice(['A', 'B', 'C', 'D'], 100),
-                'Sales': np.random.randint(100, 1000, 100),
-                'Quantity': np.random.randint(1, 50, 100),
-                'Date': pd.date_range('2024-01-01', periods=100, freq='D')
-            })
-            
-            st.session_state.data = sample_data
-            st.session_state.column_metadata = FileIngestionAgent.get_column_metadata(sample_data)
-            st.session_state.current_file = "sample_sales_data.csv"
-            
-            st.success("✅ Sample data generated! Scroll up to see the data preview.")
-            st.rerun()
+        # If default data is loaded but no welcome screen shown
+        elif st.session_state.using_default_data:
+            st.info("🏭 **Ready to analyze!** Default mining process database is loaded. Upload your own file or start asking questions about the mining data!")
 
 if __name__ == "__main__":
     main()
