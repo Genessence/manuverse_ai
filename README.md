@@ -34,16 +34,40 @@ A sophisticated Streamlit application that demonstrates a multi-agent system for
 
 ## 🛠️ Installation
 
+### Option 1: Quick Setup (Windows)
 1. **Clone or download this repository**
-2. **Install dependencies**:
+2. **Run the setup script**:
+   ```bash
+   setup_venv.bat
+   ```
+3. **Activate virtual environment and run**:
+   ```bash
+   venv\Scripts\activate.bat
+   streamlit run multi_agent_data_analysis.py
+   ```
+
+### Option 2: Manual Setup
+1. **Clone or download this repository**
+2. **Create a virtual environment** (recommended):
+   ```bash
+   python -m venv venv
+   ```
+3. **Activate virtual environment**:
+   - Windows: `venv\Scripts\activate.bat`
+   - Linux/Mac: `source venv/bin/activate`
+4. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
-
-3. **Run the application**:
+5. **Run the application**:
    ```bash
    streamlit run multi_agent_data_analysis.py
    ```
+
+### Important Notes
+- **Virtual Environment**: Highly recommended to avoid numpy/matplotlib compatibility issues
+- **Large Database File**: The mining process database file (175MB) is not included in the repository due to GitHub file size limits
+- **Sample Data**: The application includes sample data generation for testing
 
 4. **Access the application** in your browser at `http://localhost:8501`
 
