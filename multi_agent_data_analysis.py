@@ -801,16 +801,21 @@ def main():
                     # Show that user data is now being used
                     st.info("🎯 **Now analyzing your uploaded data**")
     
-    elif not st.session_state.get('user_uploaded_file', False) and st.session_state.using_default_data:
-        # Show default data info in sidebar
-        st.sidebar.success("✅ Using default mining database")
-        if st.session_state.data is not None:
-            st.sidebar.write(f"**Rows:** {len(st.session_state.data):,}")
-            st.sidebar.write(f"**Columns:** {len(st.session_state.data.columns)}")
-        st.sidebar.info("💡 Upload your own file to analyze different data")
+    # Show data info in sidebar when any data is loaded
+    if st.session_state.data is not None:
+        if st.session_state.using_default_data:
+            st.sidebar.success("✅ Using default mining database")
+        else:
+            st.sidebar.success(f"✅ Your file loaded: {st.session_state.current_file}")
         
-        # Display data preview
-        if st.session_state.data is not None:
+        st.sidebar.write(f"**Rows:** {len(st.session_state.data):,}")
+        st.sidebar.write(f"**Columns:** {len(st.session_state.data.columns)}")
+        
+        if st.session_state.using_default_data:
+            st.sidebar.info("💡 Upload your own file to analyze different data")
+    
+    # Display data preview and query interface when any data is loaded
+    if st.session_state.data is not None:
             # Show dataset source information
             if st.session_state.using_default_data:
                 st.header("📊 Data Preview - Default Mining Process Database")
@@ -1022,9 +1027,8 @@ def main():
                         st.write(f"**Result:** {item['result']}")
                         st.json(item['plan'])
     
-    else:
-        # Welcome screen - show only if no default data is loaded
-        if not st.session_state.using_default_data:
+    # Welcome screen - show only when no data is loaded at all
+    if st.session_state.data is None:
             st.header("Welcome to the Multi-Agent Data Analysis System! 👋")
             
             st.markdown("""
@@ -1119,10 +1123,6 @@ def main():
                     
                     st.success("✅ Sample sales data generated!")
                     st.rerun()
-        
-        # If default data is loaded but no welcome screen shown
-        elif st.session_state.using_default_data:
-            st.info("🏭 **Ready to analyze!** Default mining process database is loaded. Upload your own file or start asking questions about the mining data!")
 
 if __name__ == "__main__":
     main()
