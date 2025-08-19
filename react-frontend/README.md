@@ -140,7 +140,7 @@ Creates optimized production build in `build/` directory.
 Create `.env.local` for local development:
 
 ```env
-REACT_APP_API_URL=http://localhost:8000
+REACT_APP_API_URL=http://localhost:8001
 REACT_APP_API_TIMEOUT=30000
 ```
 

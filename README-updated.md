@@ -51,8 +51,8 @@ run_fullstack.bat
 ```bash
 # Setup and run API server
 run_api.bat
-# API: http://localhost:8000
-# Docs: http://localhost:8000/docs
+# API: http://localhost:8001
+# Docs: http://localhost:8001/docs
 ```
 
 #### React Frontend  
@@ -119,7 +119,7 @@ multi-agent-data-analysis/
 
 ## 🔧 API Endpoints
 
-### FastAPI Backend (`http://localhost:8000`)
+### FastAPI Backend (`http://localhost:8001`)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -134,10 +134,10 @@ multi-agent-data-analysis/
 ### Request Examples
 ```bash
 # Upload file
-curl -X POST "http://localhost:8000/upload" -F "file=@data.csv"
+curl -X POST "http://localhost:8001/upload" -F "file=@data.csv"
 
 # Analyze data
-curl -X POST "http://localhost:8000/analyze" \
+curl -X POST "http://localhost:8001/analyze" \
   -H "Content-Type: application/json" \
   -d '{"query": "Show me the top 10 records", "enableVisualization": true}'
 ```

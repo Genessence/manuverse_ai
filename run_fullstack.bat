@@ -14,9 +14,9 @@ start "React Frontend" cmd /k "run_react.bat"
 echo.
 echo Both servers are starting...
 echo.
-echo API Server: http://localhost:8000
+echo API Server: http://localhost:8001
 echo React Frontend: http://localhost:3000
-echo API Documentation: http://localhost:8000/docs
+echo API Documentation: http://localhost:8001/docs
 echo.
 echo Press any key to close this window (servers will continue running)
 pause >nul

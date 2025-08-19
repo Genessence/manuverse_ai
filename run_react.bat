@@ -14,7 +14,7 @@ echo.
 echo Starting React development server...
 echo Frontend will be available at: http://localhost:3000
 echo.
-echo Make sure the API server is running on http://localhost:8000
+echo Make sure the API server is running on http://localhost:8001
 echo Use run_api.bat to start the API server
 echo.
 echo Press Ctrl+C to stop the development server
